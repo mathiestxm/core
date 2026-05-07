@@ -1503,31 +1503,23 @@ Some reply
 // Test that WantsMdn parameter is not set on outgoing messages.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_outgoing_wants_mdn() -> Result<()> {
-    let alice = TestContext::new_alice().await;
-    let bob = TestContext::new_bob().await;
+    let mut tcm = TestContextManager::new();
+    let alice = &tcm.alice().await;
+    let alice2 = &tcm.alice().await;
+    let bob = &tcm.bob().await;
 
-    let raw = br"Date: Thu, 28 Jan 2021 00:26:57 +0000
-Chat-Version: 1.0\n\
-Message-ID: <foobarbaz@example.org>
-To: Bob <bob@example.org>
-From: Alice <alice@example.org>
-Subject: subject
-Chat-Disposition-Notification-To: alice@example.org
-
-Message.
-";
+    let chat_id = alice.create_chat(bob).await.id;
+    let sent = alice.send_text(chat_id, "Message.").await;
 
     // Bob receives message.
-    receive_imf(&bob, raw, false).await?;
-    let msg = bob.get_last_msg().await;
+    let bob_msg = bob.recv_msg(&sent).await;
     // Message is incoming.
-    assert!(msg.param.get_bool(Param::WantsMdn).unwrap());
+    assert!(bob_msg.param.get_bool(Param::WantsMdn).unwrap());
 
     // Alice receives copy-to-self.
-    receive_imf(&alice, raw, false).await?;
-    let msg = alice.get_last_msg().await;
+    let alice2_msg = alice2.recv_msg(&sent).await;
     // Message is outgoing, don't send read receipt to self.
-    assert!(msg.param.get_bool(Param::WantsMdn).is_none());
+    assert!(alice2_msg.param.get_bool(Param::WantsMdn).is_none());
 
     Ok(())
 }
@@ -1604,7 +1596,9 @@ async fn test_ignore_read_receipt_to_self() -> Result<()> {
 /// recognize it as MDN nevertheless to avoid displaying it in the chat as normal message.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_ms_exchange_mdn() -> Result<()> {
-    let t = TestContext::new_alice().await;
+    let mut tcm = TestContextManager::new();
+    let t = tcm.alice().await;
+    t.set_config(Config::ProcessUnencrypted, Some("1")).await?;
 
     let original =
         include_bytes!("../../test-data/message/ms_exchange_report_original_message.eml");
@@ -2048,6 +2042,8 @@ async fn test_multiple_autocrypt_hdrs() -> Result<()> {
 async fn test_receive_signed_only() -> Result<()> {
     let mut tcm = TestContextManager::new();
     let bob = &tcm.bob().await;
+    bob.set_config(Config::ProcessUnencrypted, Some("1"))
+        .await?;
 
     let imf_raw = include_bytes!("../../test-data/message/unencrypted_signed_simple.eml");
     let msg = receive_imf(bob, imf_raw, false).await?.unwrap();

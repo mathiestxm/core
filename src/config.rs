@@ -486,6 +486,11 @@ pub enum Config {
     /// Experimental option denoting that the current profile is shared between multiple team members.
     /// For now, the only effect of this option is that seen flags are not synchronized.
     TeamProfile,
+
+    /// Process unencrypted messages.
+    ///
+    /// Unencrypted messages are fetched and processed only if this setting is explicitly enabled.
+    ProcessUnencrypted,
 }
 
 impl Config {

@@ -505,6 +505,11 @@ pub(crate) async fn receive_imf_inner(
         Ok(mime_parser) => mime_parser,
     };
 
+    if !(mime_parser.was_encrypted() || mime_parser.get_header(HeaderDef::SecureJoin).is_some()) && !context.get_config_bool(Config::ProcessUnencrypted).await? {
+        warn!(context, "Fetched unencrypted message, ignoring");
+        return trash().await;
+    }
+
     let rfc724_mid_orig = &mime_parser
         .get_rfc724_mid()
         .unwrap_or(rfc724_mid.to_string());

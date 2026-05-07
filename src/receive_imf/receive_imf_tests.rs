@@ -100,6 +100,9 @@ async fn test_adhoc_group_is_shown() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_adhoc_group_show_accepted_contact_accepted() {
     let t = TestContext::new_alice().await;
+    t.set_config_bool(Config::ProcessUnencrypted, true)
+        .await
+        .unwrap();
 
     // accept Bob by accepting a delta-message from Bob
     receive_imf(&t, MSGRMSG, false).await.unwrap();
@@ -154,6 +157,9 @@ async fn test_adhoc_group_show_all() {
 async fn test_adhoc_groups_merge() -> Result<()> {
     let mut tcm = TestContextManager::new();
     let alice = &tcm.alice().await;
+    alice
+        .set_config_bool(Config::ProcessUnencrypted, true)
+        .await?;
     receive_imf(
         alice,
         b"From: bob@example.net\n\
@@ -354,6 +360,9 @@ async fn test_no_message_id_header() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_escaped_from() {
     let t = TestContext::new_alice().await;
+    t.set_config_bool(Config::ProcessUnencrypted, true)
+        .await
+        .unwrap();
     let contact_id = Contact::create(&t, "foobar", "foobar@example.com")
         .await
         .unwrap();
@@ -387,6 +396,9 @@ async fn test_escaped_from() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_escaped_recipients() {
     let t = TestContext::new_alice().await;
+    t.set_config_bool(Config::ProcessUnencrypted, true)
+        .await
+        .unwrap();
     Contact::create(&t, "foobar", "foobar@example.com")
         .await
         .unwrap();
@@ -434,6 +446,9 @@ async fn test_escaped_recipients() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_cc_to_contact() {
     let t = TestContext::new_alice().await;
+    t.set_config_bool(Config::ProcessUnencrypted, true)
+        .await
+        .unwrap();
     Contact::create(&t, "foobar", "foobar@example.com")
         .await
         .unwrap();
@@ -590,6 +605,9 @@ async fn test_parse_ndn(
 ) -> (TestContext, MsgId) {
     let t = TestContext::new().await;
     t.configure_addr(self_addr).await;
+    t.set_config(Config::ProcessUnencrypted, Some("1"))
+        .await
+        .unwrap();
 
     receive_imf(
         &t,
@@ -674,6 +692,7 @@ async fn test_resend_after_ndn() -> Result<()> {
 async fn test_parse_ndn_group_msg() -> Result<()> {
     let t = TestContext::new().await;
     t.configure_addr("alice@gmail.com").await;
+    t.set_config_bool(Config::ProcessUnencrypted, true).await?;
 
     receive_imf(
         &t,
@@ -715,6 +734,7 @@ async fn test_parse_ndn_group_msg() -> Result<()> {
 async fn test_concat_multiple_ndns() -> Result<()> {
     let t = TestContext::new().await;
     t.configure_addr("alice@posteo.org").await;
+    t.set_config_bool(Config::ProcessUnencrypted, true).await?;
     let mid = "1234@mail.gmail.com";
     receive_imf(
         &t,
@@ -772,6 +792,9 @@ async fn load_imf_email(context: &Context, imf_raw: &[u8]) -> Message {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_html_only_mail() {
     let t = TestContext::new_alice().await;
+    t.set_config_bool(Config::ProcessUnencrypted, true)
+        .await
+        .unwrap();
     let msg = load_imf_email(&t, include_bytes!("../../test-data/message/wrong-html.eml")).await;
     assert_eq!(
         msg.text,
@@ -807,6 +830,7 @@ static GH_MAILINGLIST2: &str = "Received: (Postfix, from userid 1000); Mon, 4 De
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_github_mailing_list() -> Result<()> {
     let t = TestContext::new_alice().await;
+    t.set_config_bool(Config::ProcessUnencrypted, true).await?;
 
     receive_imf(&t.ctx, GH_MAILINGLIST, false).await?;
 
@@ -880,6 +904,8 @@ static DC_MAILINGLIST2: &[u8] = b"Received: (Postfix, from userid 1000); Mon, 4 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_classic_mailing_list() -> Result<()> {
     let t = TestContext::new_alice().await;
+    t.set_config(Config::ProcessUnencrypted, Some("1")).await?;
+
     receive_imf(&t.ctx, DC_MAILINGLIST, false).await.unwrap();
     let chats = Chatlist::try_load(&t.ctx, 0, None, None).await.unwrap();
     let chat_id = chats.get_chat_id(0).unwrap();
@@ -921,6 +947,8 @@ Hello mailinglist!\r\n"
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_other_device_writes_to_mailinglist() -> Result<()> {
     let t = TestContext::new_alice().await;
+    t.set_config(Config::ProcessUnencrypted, Some("1")).await?;
+
     receive_imf(&t, DC_MAILINGLIST, false).await.unwrap();
     let first_msg = t.get_last_msg().await;
     let first_chat = Chat::load_from_db(&t, first_msg.chat_id).await?;
@@ -971,6 +999,9 @@ async fn test_other_device_writes_to_mailinglist() -> Result<()> {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_block_mailing_list() {
     let t = TestContext::new_alice().await;
+    t.set_config(Config::ProcessUnencrypted, Some("1"))
+        .await
+        .unwrap();
 
     receive_imf(&t.ctx, DC_MAILINGLIST, false).await.unwrap();
     t.evtracker.wait_next_incoming_message().await;
@@ -1005,6 +1036,9 @@ async fn test_block_mailing_list() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_mailing_list_decide_block_then_unblock() {
     let t = TestContext::new_alice().await;
+    t.set_config(Config::ProcessUnencrypted, Some("1"))
+        .await
+        .unwrap();
 
     receive_imf(&t, DC_MAILINGLIST, false).await.unwrap();
     let blocked = Contact::get_all_blocked(&t).await.unwrap();
@@ -1035,6 +1069,9 @@ async fn test_mailing_list_decide_block_then_unblock() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_mailing_list_decide_not_now() {
     let t = TestContext::new_alice().await;
+    t.set_config(Config::ProcessUnencrypted, Some("1"))
+        .await
+        .unwrap();
 
     receive_imf(&t.ctx, DC_MAILINGLIST, false).await.unwrap();
 
@@ -1062,6 +1099,9 @@ async fn test_mailing_list_decide_not_now() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_mailing_list_decide_accept() {
     let t = TestContext::new_alice().await;
+    t.set_config(Config::ProcessUnencrypted, Some("1"))
+        .await
+        .unwrap();
 
     receive_imf(&t.ctx, DC_MAILINGLIST, false).await.unwrap();
 
@@ -1084,6 +1124,8 @@ async fn test_mailing_list_decide_accept() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_mailing_list_multiple_names_in_subject() -> Result<()> {
     let t = TestContext::new_alice().await;
+    t.set_config(Config::ProcessUnencrypted, Some("1")).await?;
+
     receive_imf(
         &t,
         b"From: Foo Bar <foo@bar.org>\n\
@@ -1108,6 +1150,7 @@ async fn test_mailing_list_multiple_names_in_subject() -> Result<()> {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_majordomo_mailing_list() -> Result<()> {
     let t = TestContext::new_alice().await;
+    t.set_config(Config::ProcessUnencrypted, Some("1")).await?;
 
     // test mailing lists not having a `ListId:`-header
     receive_imf(
@@ -1160,6 +1203,7 @@ async fn test_majordomo_mailing_list() -> Result<()> {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_mailchimp_mailing_list() -> Result<()> {
     let t = TestContext::new_alice().await;
+    t.set_config(Config::ProcessUnencrypted, Some("1")).await?;
 
     receive_imf(
             &t,
@@ -1193,6 +1237,7 @@ async fn test_mailchimp_mailing_list() -> Result<()> {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_dhl_mailing_list() -> Result<()> {
     let t = TestContext::new_alice().await;
+    t.set_config(Config::ProcessUnencrypted, Some("1")).await?;
 
     receive_imf(
         &t,
@@ -1218,6 +1263,7 @@ async fn test_dhl_mailing_list() -> Result<()> {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_dpd_mailing_list() -> Result<()> {
     let t = TestContext::new_alice().await;
+    t.set_config(Config::ProcessUnencrypted, Some("1")).await?;
 
     receive_imf(
         &t,
@@ -1243,6 +1289,7 @@ async fn test_dpd_mailing_list() -> Result<()> {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_xt_local_mailing_list() -> Result<()> {
     let t = TestContext::new_alice().await;
+    t.set_config(Config::ProcessUnencrypted, Some("1")).await?;
 
     receive_imf(
         &t,
@@ -1276,6 +1323,7 @@ async fn test_xt_local_mailing_list() -> Result<()> {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_xing_mailing_list() -> Result<()> {
     let t = TestContext::new_alice().await;
+    t.set_config(Config::ProcessUnencrypted, Some("1")).await?;
 
     receive_imf(
         &t,
@@ -1298,6 +1346,7 @@ async fn test_xing_mailing_list() -> Result<()> {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_ttline_mailing_list() -> Result<()> {
     let t = TestContext::new_alice().await;
+    t.set_config(Config::ProcessUnencrypted, Some("1")).await?;
 
     receive_imf(
         &t,
@@ -1318,6 +1367,9 @@ async fn test_ttline_mailing_list() -> Result<()> {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_mailing_list_with_mimepart_footer() {
     let t = TestContext::new_alice().await;
+    t.set_config(Config::ProcessUnencrypted, Some("1"))
+        .await
+        .unwrap();
 
     // the mailing list message contains two top-level texts.
     // the second text is a footer that is added by some mailing list software
@@ -1345,6 +1397,9 @@ async fn test_mailing_list_with_mimepart_footer() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_mailing_list_with_mimepart_footer_signed() {
     let t = TestContext::new_alice().await;
+    t.set_config(Config::ProcessUnencrypted, Some("1"))
+        .await
+        .unwrap();
 
     receive_imf(
         &t,
@@ -1369,6 +1424,9 @@ async fn test_mailing_list_with_mimepart_footer_signed() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_apply_mailinglist_changes_assigned_by_reply() {
     let t = TestContext::new_alice().await;
+    t.set_config(Config::ProcessUnencrypted, Some("1"))
+        .await
+        .unwrap();
 
     receive_imf(&t, GH_MAILINGLIST, false).await.unwrap();
 
@@ -1407,6 +1465,9 @@ async fn test_apply_mailinglist_changes_assigned_by_reply() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_mailing_list_chat_message() {
     let t = TestContext::new_alice().await;
+    t.set_config(Config::ProcessUnencrypted, Some("1"))
+        .await
+        .unwrap();
 
     receive_imf(
         &t,
@@ -1429,6 +1490,9 @@ async fn test_mailing_list_chat_message() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_mailing_list_bot() {
     let t = TestContext::new_alice().await;
+    t.set_config(Config::ProcessUnencrypted, Some("1"))
+        .await
+        .unwrap();
     t.set_config(Config::Bot, Some("1")).await.unwrap();
 
     receive_imf(
@@ -1461,6 +1525,10 @@ async fn test_dont_show_noreply_in_contacts_list() {
 
 async fn check_dont_show_in_contacts_list(addr: &str) {
     let t = TestContext::new_alice().await;
+    t.set_config(Config::ProcessUnencrypted, Some("1"))
+        .await
+        .unwrap();
+
     receive_imf(
         &t,
         format!(
@@ -1490,6 +1558,9 @@ YEAAAAAA!.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_pdf_filename_simple() {
     let t = TestContext::new_alice().await;
+    t.set_config_bool(Config::ProcessUnencrypted, true)
+        .await
+        .unwrap();
     let msg = load_imf_email(
         &t,
         include_bytes!("../../test-data/message/pdf_filename_simple.eml"),
@@ -1510,6 +1581,9 @@ async fn test_pdf_filename_simple() {
 async fn test_pdf_filename_continuation() {
     // test filenames split across multiple header lines, see rfc 2231
     let t = TestContext::new_alice().await;
+    t.set_config_bool(Config::ProcessUnencrypted, true)
+        .await
+        .unwrap();
     let msg = load_imf_email(
         &t,
         include_bytes!("../../test-data/message/pdf_filename_continuation.eml"),
@@ -1535,6 +1609,9 @@ async fn test_pdf_filename_continuation() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_many_images() {
     let t = TestContext::new_alice().await;
+    t.set_config(Config::ProcessUnencrypted, Some("1"))
+        .await
+        .unwrap();
 
     receive_imf(
         &t,
@@ -1555,6 +1632,9 @@ async fn test_many_images() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_in_reply_to() {
     let t = TestContext::new().await;
+    t.set_config(Config::ProcessUnencrypted, Some("1"))
+        .await
+        .unwrap();
     t.configure_addr("bob@example.com").await;
 
     // Receive message from Alice about group "foo".
@@ -1632,6 +1712,10 @@ async fn test_save_mime_headers_off() -> anyhow::Result<()> {
 async fn check_alias_reply(from_dc: bool, chat_request: bool, group_request: bool) {
     let mut tcm = TestContextManager::new();
     let alice = tcm.alice().await;
+    alice
+        .set_config_bool(Config::ProcessUnencrypted, true)
+        .await
+        .unwrap();
 
     // Claire, a customer, sends a support request
     // to the alias address <support@example.org>.
@@ -1698,6 +1782,11 @@ async fn check_alias_reply(from_dc: bool, chat_request: bool, group_request: boo
 
     let claire = tcm.unconfigured().await;
     claire.configure_addr("claire@example.org").await;
+    claire
+        .set_config_bool(Config::ProcessUnencrypted, true)
+        .await
+        .unwrap();
+
     receive_imf(&claire, claire_request.as_bytes(), false)
         .await
         .unwrap();
@@ -1912,6 +2001,7 @@ Message content",
 async fn test_unencrypted_doesnt_goto_self_chat() -> Result<()> {
     let mut tcm = TestContextManager::new();
     let t = &tcm.alice().await;
+    t.set_config(Config::ProcessUnencrypted, Some("1")).await?;
     let mut chat_id = None;
 
     for (i, to) in [
@@ -1993,6 +2083,10 @@ async fn test_no_smtp_job_for_self_chat() -> Result<()> {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_outgoing_classic_mail_creates_chat() {
     let alice = TestContext::new_alice().await;
+    alice
+        .set_config(Config::ProcessUnencrypted, Some("1"))
+        .await
+        .unwrap();
 
     // Alice downloads outgoing classic email.
     receive_imf(
@@ -2018,6 +2112,9 @@ Message content",
 async fn test_duplicate_message() -> Result<()> {
     // Test that duplicate messages are ignored based on the Message-ID
     let alice = TestContext::new_alice().await;
+    alice
+        .set_config_bool(Config::ProcessUnencrypted, true)
+        .await?;
 
     let bob_contact_id = Contact::add_or_lookup(
         &alice,
@@ -2076,6 +2173,8 @@ Second signature";
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_ignore_footer_status_from_mailinglist() -> Result<()> {
     let t = TestContext::new_alice().await;
+    t.set_config_bool(Config::ProcessUnencrypted, true).await?;
+
     let bob_id = Contact::add_or_lookup(
         &t,
         "",
@@ -2155,6 +2254,8 @@ Original signature updated",
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_ignore_old_status_updates() -> Result<()> {
     let t = TestContext::new_alice().await;
+    t.set_config_bool(Config::ProcessUnencrypted, true).await?;
+
     let bob_id = Contact::add_or_lookup(
         &t,
         "",
@@ -2224,11 +2325,15 @@ sig thursday",
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_chat_assignment_private_classical_reply() {
+    let mut tcm = TestContextManager::new();
     for outgoing_is_classical in &[true, false] {
-        let t = TestContext::new_alice().await;
+        let t = &tcm.alice().await;
+        t.set_config_bool(Config::ProcessUnencrypted, true)
+            .await
+            .unwrap();
 
         receive_imf(
-            &t,
+            t,
             format!(
                 r#"Received: from mout.gmx.net (mout.gmx.net [212.227.17.22])
 Subject: =?utf-8?q?single_reply-to?=
@@ -2270,7 +2375,7 @@ Message-ID: <Gr.eJ_llQIXf0K.buxmrnMmG0Y@gmx.de>"
         assert_eq!(group_chat.name, "single reply-to");
 
         receive_imf(
-            &t,
+            t,
             format!(
                 r#"Subject: Re: single reply-to
 To: "Alice" <alice@example.org>
@@ -2402,8 +2507,12 @@ Sent with my Delta Chat Messenger: https://delta.chat
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_chat_assignment_nonprivate_classical_reply() {
+    let mut tcm = TestContextManager::new();
     for outgoing_is_classical in &[true, false] {
-        let t = TestContext::new_alice().await;
+        let t = &tcm.alice().await;
+        t.set_config_bool(Config::ProcessUnencrypted, true)
+            .await
+            .unwrap();
 
         receive_imf(
             &t,
@@ -2448,7 +2557,7 @@ Message-ID: <Gr.eJ_llQIXf0K.buxmrnMmG0Y@gmx.de>"
 
         // =============== Receive another outgoing message and check that it is put into the same chat ===============
         receive_imf(
-            &t,
+            t,
             format!(
                 r#"Received: from mout.gmx.net (mout.gmx.net [212.227.17.22])
 Subject: Out subj
@@ -2658,6 +2767,7 @@ async fn test_read_receipts_dont_unmark_bots() -> Result<()> {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_gmx_forwarded_msg() -> Result<()> {
     let t = TestContext::new_alice().await;
+    t.set_config_bool(Config::ProcessUnencrypted, true).await?;
 
     receive_imf(
         &t,
@@ -3253,6 +3363,9 @@ async fn test_blocked_contact_creates_group() -> Result<()> {
 async fn test_outgoing_undecryptable() -> Result<()> {
     let alice = &TestContext::new().await;
     alice.configure_addr("alice@example.org").await;
+    alice
+        .set_config(Config::ProcessUnencrypted, Some("1"))
+        .await?;
 
     let raw = include_bytes!("../../test-data/message/thunderbird_with_autocrypt.eml");
     receive_imf(alice, raw, false).await?;
@@ -3289,6 +3402,7 @@ async fn test_outgoing_undecryptable() -> Result<()> {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_thunderbird_autocrypt() -> Result<()> {
     let t = TestContext::new_bob().await;
+    t.set_config_bool(Config::ProcessUnencrypted, true).await?;
 
     let raw = include_bytes!("../../test-data/message/thunderbird_with_autocrypt.eml");
     let received_msg = receive_imf(&t, raw, false).await?.unwrap();
@@ -3336,6 +3450,7 @@ async fn test_issuer_fingerprint() -> Result<()> {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_prefer_encrypt_mutual_if_encrypted() -> Result<()> {
     let t = TestContext::new_bob().await;
+    t.set_config_bool(Config::ProcessUnencrypted, true).await?;
 
     // The message has public key attached *and* Autocrypt header.
     //
@@ -3407,6 +3522,9 @@ async fn test_forged_from_and_no_valid_signatures() -> Result<()> {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_wrong_from_name_and_no_valid_signatures() -> Result<()> {
     let t = &TestContext::new_bob().await;
+    // TODO: same test, but with ProcessUnencrypted, should trash the message
+    t.set_config(Config::ProcessUnencrypted, Some("1")).await?;
+
     let raw = include_bytes!("../../test-data/message/thunderbird_encrypted_signed.eml");
     let raw = String::from_utf8(raw.to_vec())?.replace("From: Alice", "From: A");
     receive_imf(t, raw.as_bytes(), false).await?.unwrap();
@@ -3421,6 +3539,8 @@ async fn test_wrong_from_name_and_no_valid_signatures() -> Result<()> {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_thunderbird_autocrypt_unencrypted() -> Result<()> {
     let bob = &TestContext::new_bob().await;
+    bob.set_config(Config::ProcessUnencrypted, Some("1"))
+        .await?;
 
     // Thunderbird message with Autocrypt header and a signature,
     // but not encrypted.
@@ -3459,6 +3579,11 @@ async fn test_thunderbird_autocrypt_unencrypted() -> Result<()> {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_thunderbird_unsigned() -> Result<()> {
     let alice = TestContext::new_alice().await;
+    // TODO: same test without process unencrypted should trash the message
+    alice
+        .set_config(Config::ProcessUnencrypted, Some("1"))
+        .await
+        .unwrap();
 
     // Alice receives an unsigned message from Bob.
     let raw = include_bytes!("../../test-data/message/thunderbird_encrypted_unsigned.eml");
@@ -3568,6 +3693,7 @@ async fn test_big_forwarded_with_big_attachment() -> Result<()> {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_mua_user_adds_member() -> Result<()> {
     let t = TestContext::new_alice().await;
+    t.set_config_bool(Config::ProcessUnencrypted, true).await?;
 
     receive_imf(
         &t,
@@ -3619,6 +3745,9 @@ async fn test_mua_user_adds_member() -> Result<()> {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_mua_user_adds_recipient_to_single_chat() -> Result<()> {
     let alice = TestContext::new_alice().await;
+    alice
+        .set_config_bool(Config::ProcessUnencrypted, true)
+        .await?;
 
     // Alice sends a 1:1 message to Bob, creating a 1:1 chat.
     let msg = receive_imf(
@@ -4051,6 +4180,9 @@ async fn test_dont_readd_with_normal_msg() -> Result<()> {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_mua_cant_remove() -> Result<()> {
     let alice = TestContext::new_alice().await;
+    alice
+        .set_config_bool(Config::ProcessUnencrypted, true)
+        .await?;
 
     let now = time();
 
@@ -4143,6 +4275,9 @@ async fn test_mua_cant_remove() -> Result<()> {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_mua_can_add() -> Result<()> {
     let alice = TestContext::new_alice().await;
+    alice
+        .set_config(Config::ProcessUnencrypted, Some("1"))
+        .await?;
 
     let now = time();
 
@@ -4202,6 +4337,9 @@ async fn test_mua_can_add() -> Result<()> {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_mua_can_readd() -> Result<()> {
     let alice = TestContext::new_alice().await;
+    alice
+        .set_config_bool(Config::ProcessUnencrypted, true)
+        .await?;
 
     // Alice creates chat with 3 contacts.
     let msg = receive_imf(
@@ -4365,6 +4503,10 @@ async fn test_keep_member_list_if_possibly_nomember() -> Result<()> {
 async fn test_adhoc_grp_name_no_prefix() -> Result<()> {
     let mut tcm = TestContextManager::new();
     let alice = &tcm.alice().await;
+    alice
+        .set_config(Config::ProcessUnencrypted, Some("1"))
+        .await?;
+
     let chat_id = receive_imf(
         alice,
         b"Subject: Re: Once upon a time this was with the only Re: here\n\
@@ -4400,12 +4542,12 @@ async fn test_outgoing_msg_forgery() -> Result<()> {
     imex(alice, ImexMode::ExportSelfKeys, export_dir.path(), None).await?;
     // We need Bob only to encrypt the forged message to Alice's key, actually Bob doesn't
     // participate in the scenario.
-    let bob = &TestContext::new().await;
+    let bob = &tcm.unconfigured().await;
     assert_eq!(crate::key::load_self_secret_keyring(bob).await?.len(), 0);
     bob.configure_addr("bob@example.net").await;
     imex(bob, ImexMode::ImportSelfKeys, export_dir.path(), None).await?;
     assert_eq!(crate::key::load_self_secret_keyring(bob).await?.len(), 1);
-    let malice = &TestContext::new().await;
+    let malice = &tcm.unconfigured().await;
     malice.configure_addr(alice_addr).await;
 
     let malice_chat_id = tcm
@@ -4647,6 +4789,7 @@ async fn test_forged_from() -> Result<()> {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_multiline_iso_8859_1_subject() -> Result<()> {
     let t = &TestContext::new_alice().await;
+    t.set_config_bool(Config::ProcessUnencrypted, true).await?;
     let mail = b"Received: (Postfix, from userid 1000); Mon, 4 Dec 2006 14:51:39 +0100 (CET)\n\
         From: bob@example.com\n\
         To: alice@example.org, claire@example.com\n\
@@ -4711,6 +4854,7 @@ async fn test_references() -> Result<()> {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_list_from() -> Result<()> {
     let t = &TestContext::new_alice().await;
+    t.set_config_bool(Config::ProcessUnencrypted, true).await?;
 
     let raw = include_bytes!("../../test-data/message/list-from.eml");
     let received = receive_imf(t, raw, false).await?.unwrap();
@@ -4840,6 +4984,7 @@ async fn test_make_n_send_vcard() -> Result<()> {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_unencrypted_group_id_no_recipients() -> Result<()> {
     let t = &TestContext::new_alice().await;
+    t.set_config(Config::ProcessUnencrypted, Some("1")).await?;
     let raw = "From: alice@example.org
 Subject: Group
 Chat-Version: 1.0
@@ -5313,6 +5458,9 @@ async fn test_outgoing_unencrypted_chat_assignment() {
 async fn test_incoming_reply_with_date_in_past() -> Result<()> {
     let mut tcm = TestContextManager::new();
     let alice = &tcm.alice().await;
+    alice
+        .set_config_bool(Config::ProcessUnencrypted, true)
+        .await?;
 
     let msg0 = receive_imf(
         alice,
@@ -5454,6 +5602,11 @@ async fn test_small_unencrypted_group() -> Result<()> {
     let mut tcm = TestContextManager::new();
     let alice = &tcm.alice().await;
     let bob = &tcm.bob().await;
+    alice
+        .set_config(Config::ProcessUnencrypted, Some("1"))
+        .await?;
+    bob.set_config(Config::ProcessUnencrypted, Some("1"))
+        .await?;
 
     let alice_chat_id = chat::create_group_unencrypted(alice, "Unencrypted group").await?;
     let alice_bob_id = alice.add_or_lookup_address_contact_id(bob).await;
@@ -5533,6 +5686,7 @@ async fn test_lookup_key_contact_by_address_self() -> Result<()> {
 async fn test_calendar_alternative() -> Result<()> {
     let mut tcm = TestContextManager::new();
     let t = &tcm.alice().await;
+    t.set_config_bool(Config::ProcessUnencrypted, true).await?;
     let raw = include_bytes!("../../test-data/message/calendar-alternative.eml");
     let msg = receive_imf(t, raw, false).await?.unwrap();
     assert_eq!(msg.msg_ids.len(), 1);

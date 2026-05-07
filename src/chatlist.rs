@@ -473,6 +473,7 @@ mod tests {
         add_contact_to_chat, create_broadcast, create_group, get_chat_contacts,
         remove_contact_from_chat, send_text_msg, set_chat_name,
     };
+    use crate::config::Config;
     use crate::receive_imf::receive_imf;
     use crate::securejoin::get_securejoin_qr;
     use crate::stock_str::StockMessage;
@@ -665,6 +666,7 @@ mod tests {
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn test_search_single_chat() -> anyhow::Result<()> {
         let t = TestContext::new_alice().await;
+        t.set_config(Config::ProcessUnencrypted, Some("1")).await?;
 
         // receive a one-to-one-message
         receive_imf(
@@ -725,6 +727,7 @@ mod tests {
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn test_search_single_chat_without_authname() -> anyhow::Result<()> {
         let t = TestContext::new_alice().await;
+        t.set_config(Config::ProcessUnencrypted, Some("1")).await?;
 
         // receive a one-to-one-message without authname set
         receive_imf(

@@ -21,6 +21,7 @@ const PREFETCH_FLAGS: &str = "(UID RFC822.SIZE BODY.PEEK[HEADER.FIELDS (\
                               DATE \
                               X-MICROSOFT-ORIGINAL-MESSAGE-ID \
                               FROM \
+                              CONTENT-TYPE \
                               CHAT-VERSION \
                               CHAT-IS-POST-MESSAGE \
                               AUTOCRYPT-SETUP-MESSAGE\

@@ -139,23 +139,14 @@ async fn test_unencrypted_quote_encrypted_message() -> Result<()> {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_get_chat_id() {
     // Alice receives a message that pops up as a contact request
-    let alice = TestContext::new_alice().await;
-    receive_imf(
-        &alice,
-        b"From: Bob <bob@example.com>\n\
-                    To: alice@example.org\n\
-                    Chat-Version: 1.0\n\
-                    Message-ID: <123@example.com>\n\
-                    Date: Fri, 29 Jan 2021 21:37:55 +0000\n\
-                    \n\
-                    hello\n",
-        false,
-    )
-    .await
-    .unwrap();
+    let mut tcm = TestContextManager::new();
+    let alice = &tcm.alice().await;
+    let bob = &tcm.bob().await;
+    let chat_id = bob.create_chat_id(alice).await;
+    let sent = bob.send_text(chat_id, "hello").await;
+    let msg = bob.recv_msg(&sent).await;
 
     // check chat-id of this message
-    let msg = alice.get_last_msg().await;
     assert!(!msg.get_chat_id().is_special());
     assert_eq!(msg.get_text(), "hello".to_string());
 }
@@ -465,7 +456,9 @@ async fn test_get_state() -> Result<()> {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_is_bot() -> Result<()> {
-    let alice = TestContext::new_alice().await;
+    let mut tcm = TestContextManager::new();
+    let alice = &tcm.alice().await;
+    alice.set_config(Config::ProcessUnencrypted, Some("1")).await?;
 
     // Alice receives an auto-generated non-chat message.
     //
@@ -473,7 +466,7 @@ async fn test_is_bot() -> Result<()> {
     // in which case the message should be marked as bot-generated,
     // but the contact should not.
     receive_imf(
-        &alice,
+        alice,
         b"From: Claire <claire@example.com>\n\
                     To: alice@example.org\n\
                     Message-ID: <789@example.com>\n\
@@ -492,7 +485,7 @@ async fn test_is_bot() -> Result<()> {
 
     // Alice receives a message from Bob the bot.
     receive_imf(
-        &alice,
+        alice,
         b"From: Bob <bob@example.com>\n\
                     To: alice@example.org\n\
                     Chat-Version: 1.0\n\
@@ -512,7 +505,7 @@ async fn test_is_bot() -> Result<()> {
 
     // Alice receives a message from Bob who is not the bot anymore.
     receive_imf(
-        &alice,
+        alice,
         b"From: Bob <bob@example.com>\n\
                     To: alice@example.org\n\
                     Chat-Version: 1.0\n\
@@ -526,7 +519,7 @@ async fn test_is_bot() -> Result<()> {
     let msg = alice.get_last_msg().await;
     assert_eq!(msg.get_text(), "hello again".to_string());
     assert!(!msg.is_bot());
-    let contact = Contact::get_by_id(&alice, msg.from_id).await?;
+    let contact = Contact::get_by_id(alice, msg.from_id).await?;
     assert!(!contact.is_bot());
 
     Ok(())

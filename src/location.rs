@@ -939,7 +939,9 @@ mod tests {
     /// Tests that location.kml is hidden.
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn receive_location_kml() -> Result<()> {
-        let alice = TestContext::new_alice().await;
+        let mut tcm = TestContextManager::new();
+        let alice = &tcm.alice().await;
+        alice.set_config(Config::ProcessUnencrypted, Some("1")).await?;
 
         receive_imf(
             &alice,

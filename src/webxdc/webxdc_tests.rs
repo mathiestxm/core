@@ -983,7 +983,7 @@ async fn test_pop_status_update() -> Result<()> {
 async fn test_draft_and_send_webxdc_status_update() -> Result<()> {
     let alice = TestContext::new_alice().await;
     let bob = TestContext::new_bob().await;
-    let alice_chat_id = alice.create_email_chat(&bob).await.id;
+    let alice_chat_id = alice.create_chat(&bob).await.id;
 
     // prepare webxdc instance,
     // status updates are not sent for drafts, therefore send_webxdc_status_update() returns Ok(None)
@@ -1030,8 +1030,6 @@ async fn test_draft_and_send_webxdc_status_update() -> Result<()> {
     let bob_instance = bob.recv_msg(&sent1).await;
     assert_eq!(bob_instance.viewtype, Viewtype::Webxdc);
     assert_eq!(bob_instance.get_filename().unwrap(), "minimal.xdc");
-    assert!(sent1.payload().contains("Content-Type: application/json"));
-    assert!(sent1.payload().contains("status-update.json"));
     assert_eq!(
         bob.get_webxdc_status_updates(bob_instance.id, StatusUpdateSerial(0))
             .await?,

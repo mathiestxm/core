@@ -332,6 +332,7 @@ async fn test_reply() -> Result<()> {
         let mut tcm = TestContextManager::new();
         let alice = tcm.alice().await;
         let bob = tcm.bob().await;
+        alice.set_config(Config::ProcessUnencrypted, Some("1")).await?;
 
         if verified {
             mark_as_verified(&alice, &bob).await;

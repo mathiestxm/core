@@ -1996,12 +1996,21 @@ pub(crate) async fn prefetch_should_download(
     // prevent_rename=true as this might be a mailing list message and in this case it would be bad if we rename the contact.
     // (prevent_rename is the last argument of from_field_to_contact_id())
 
+    let is_encrypted = if let Some(content_type) = headers.get_header_value(HeaderDef::ContentType)
+    {
+        mailparse::parse_content_type(&content_type).mimetype == "multipart/encrypted"
+    } else {
+        false
+    };
+
     if flags.any(|f| f == Flag::Draft) {
         info!(context, "Ignoring draft message");
         return Ok(false);
     }
 
-    let should_download = !blocked_contact || maybe_ndn;
+    let should_download = maybe_ndn
+        || (!blocked_contact
+            && (is_encrypted || context.get_config_bool(Config::ProcessUnencrypted).await?));
     Ok(should_download)
 }
 
