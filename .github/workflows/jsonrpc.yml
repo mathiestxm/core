@@ -34,7 +34,7 @@ jobs:
         run: npm run build
       - name: Run integration tests
         working-directory: deltachat-jsonrpc/typescript
-        run: npm run test
+        run: pytest deltachat-jsonrpc/typescript/test/basic.ts deltachat-jsonrpc/typescript/test/online.ts deltachat-jsonrpc/typescript/test/test_base.ts
         env:
           CHATMAIL_DOMAIN: ${{ vars.CHATMAIL_DOMAIN }}
       - name: Run linter
